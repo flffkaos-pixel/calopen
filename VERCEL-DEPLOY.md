@@ -1,5 +1,10 @@
 # Vercel 배포 가이드
 
+> ✅ **배포 완료**: https://calopen.vercel.app (2026-09-22 자동 설정됨)
+> - Supabase 프로젝트: calopen (Seoul 리전)
+> - PayPal Live 앱: calopen (+ 구독 플랜 2개)
+> - 환경 변수 11개 설정됨
+
 ## 🚀 수동 배포 (5분)
 
 ### 1단계: Vercel 계정 생성
