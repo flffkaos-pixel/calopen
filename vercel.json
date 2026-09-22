@@ -4,15 +4,6 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
-    "PAYPAL_CLIENT_ID": "@paypal-client-id",
-    "PAYPAL_CLIENT_SECRET": "@paypal-client-secret",
-    "RESEND_API_KEY": "@resend-api-key",
-    "NEXT_PUBLIC_APP_URL": "@app-url"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
