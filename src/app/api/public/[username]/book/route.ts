@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { bookings, eventTypes, users } from '@/lib/db/schema';
 import { eq, and, lte, gte } from 'drizzle-orm';
-import { resolveUserByUsername, computeSlots } from '@/lib/public-booking';
+import { resolveUserByUsername, computeSlots, toHostDateStr } from '@/lib/public-booking';
 import { sendEmail, bookingConfirmationEmail } from '@/lib/email';
 
 function escapeHtml(str: string): string {
@@ -57,8 +57,9 @@ export async function POST(
     }
     const end = new Date(start.getTime() + event.duration * 60 * 1000);
 
-    // Re-validate the slot is still free (prevents double booking)
-    const dateStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+    // Re-validate the slot is still free (prevents double booking).
+    // Date is interpreted in the host's timezone.
+    const dateStr = toHostDateStr(start, user.timezone || 'UTC');
     const slotCheck = await computeSlots(user.id, event.id, dateStr);
     const stillFree = (slotCheck.slots || []).some(
       (s) => new Date(s.start).getTime() === start.getTime()

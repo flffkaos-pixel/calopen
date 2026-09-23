@@ -12,14 +12,56 @@ export default function SettingsPage() {
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/book/username`;
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileTimezone, setProfileTimezone] = useState('UTC');
+  const [profileWeekStart, setProfileWeekStart] = useState(1);
+  const [profileUsername, setProfileUsername] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/book/${profileUsername || 'username'}`;
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUserId(data.user.id);
     });
+    fetch('/api/profile')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.profile) {
+          setProfileName(data.profile.name || '');
+          setProfileEmail(data.profile.email || '');
+          setProfileTimezone(data.profile.timezone || 'UTC');
+          setProfileWeekStart(data.profile.weekStart ?? 1);
+          setProfileUsername(data.profile.username || '');
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    setProfileMsg(null);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileName,
+          timezone: profileTimezone,
+          weekStart: profileWeekStart,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Save failed');
+      setProfileMsg(t('sub.saved'));
+    } catch (err: unknown) {
+      setProfileMsg(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(bookingUrl);
@@ -33,46 +75,74 @@ export default function SettingsPage() {
 
       {/* Profile */}
       <div className="bg-white rounded-xl border p-6 mb-6">
-        <h2 className="font-semibold mb-4">Profile</h2>
+        <h2 className="font-semibold mb-4">{t('sub.profile')}</h2>
         <div className="grid grid-cols-2 gap-4 max-w-lg">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Name</label>
+            <label className="block text-sm text-gray-600 mb-1">{t('auth.name')}</label>
             <input
               type="text"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg"
               placeholder="Your name"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Email</label>
+            <label className="block text-sm text-gray-600 mb-1">{t('auth.email')}</label>
             <input
               type="email"
-              className="w-full px-4 py-2 border rounded-lg"
+              value={profileEmail}
+              readOnly
+              className="w-full px-4 py-2 border rounded-lg bg-gray-50"
               placeholder="you@example.com"
             />
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">Timezone</label>
-            <select className="w-full px-4 py-2 border rounded-lg">
-              <option>UTC</option>
-              <option>America/New_York</option>
-              <option>America/Los_Angeles</option>
-              <option>Europe/London</option>
+            <select
+              value={profileTimezone}
+              onChange={(e) => setProfileTimezone(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg"
+            >
+              <option value="UTC">UTC</option>
+              <option value="Asia/Seoul">Seoul (KST)</option>
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="America/New_York">Eastern Time (ET)</option>
+              <option value="America/Chicago">Central Time (CT)</option>
+              <option value="America/Denver">Mountain Time (MT)</option>
+              <option value="America/Los_Angeles">Pacific Time (PT)</option>
+              <option value="Europe/London">London (GMT)</option>
+              <option value="Europe/Berlin">Berlin (CET)</option>
             </select>
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">Week Starts</label>
-            <select className="w-full px-4 py-2 border rounded-lg">
+            <select
+              value={profileWeekStart}
+              onChange={(e) => setProfileWeekStart(Number(e.target.value))}
+              className="w-full px-4 py-2 border rounded-lg"
+            >
               <option value={0}>Sunday</option>
               <option value={1}>Monday</option>
             </select>
           </div>
         </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={handleSaveProfile}
+            disabled={savingProfile}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {savingProfile ? t('sub.saving') : t('sub.save')}
+          </button>
+          {profileMsg && <span className="text-sm text-green-600">{profileMsg}</span>}
+        </div>
       </div>
 
       {/* Booking Link */}
       <div className="bg-white rounded-xl border p-6 mb-6">
-        <h2 className="font-semibold mb-4">Your Booking Link</h2>
+        <h2 className="font-semibold mb-4">{t('sub.bookingLink')}</h2>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -151,12 +221,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="mt-6">
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          <Save className="h-4 w-4" />
-          Save Changes
-        </button>
-      </div>
     </div>
   );
 }

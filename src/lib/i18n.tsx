@@ -76,6 +76,11 @@ const dictionaries = {
     'sub.upgrade': 'Upgrade to Teams',
     'sub.upgradeDesc': 'Team scheduling, remove branding, custom domain.',
     'sub.loading': 'Loading…',
+    'sub.saved': 'Saved!',
+    'sub.save': 'Save Changes',
+    'sub.saving': 'Saving…',
+    'sub.profile': 'Profile',
+    'sub.bookingLink': 'Your Booking Link',
   },
   ko: {
     'nav.login': '로그인',
@@ -148,6 +153,11 @@ const dictionaries = {
     'sub.upgrade': 'Teams로 업그레이드',
     'sub.upgradeDesc': '팀 스케줄링, 브랜딩 제거, 커스텀 도메인.',
     'sub.loading': '불러오는 중…',
+    'sub.saved': '저장됐어요!',
+    'sub.save': '저장하기',
+    'sub.saving': '저장 중…',
+    'sub.profile': '프로필',
+    'sub.bookingLink': '내 예약 링크',
   },
 } as const;
 
