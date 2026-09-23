@@ -89,7 +89,7 @@ export default function LandingPage() {
       <section className="py-20">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">{t('pricing.title')}</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             <PricingCard
               name={t('pricing.free')}
               price="$0"
@@ -106,15 +106,6 @@ export default function LandingPage() {
               cta={t('pricing.cta.trial')}
               ctaLink="/auth/signup?plan=teams"
               highlighted
-            />
-            <PricingCard
-              name={t('pricing.orgs')}
-              price="$28"
-              period={t('pricing.perUser')}
-              features={['Everything in Teams', 'SAML SSO', 'Audit logs', 'SOC 2/HIPAA', 'Dedicated database']}
-              cta={t('pricing.cta.contact')}
-              ctaLink="/contact"
-              highlighted={false}
             />
           </div>
         </div>

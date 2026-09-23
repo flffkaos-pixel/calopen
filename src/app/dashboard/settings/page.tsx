@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react';
 import { Save, Copy, Check, ExternalLink } from 'lucide-react';
 import { PayPalCheckout } from '@/components/paypal-checkout';
 import { createClient } from '@/lib/supabase/client';
+import { useLang } from '@/lib/i18n';
 
 const TEAMS_PLAN_ID = process.env.NEXT_PUBLIC_PAYPAL_TEAMS_PLAN_ID || '';
-const ORGS_PLAN_ID = process.env.NEXT_PUBLIC_PAYPAL_ORGS_PLAN_ID || '';
 
 export default function SettingsPage() {
+  const { t } = useLang();
   const [copied, setCopied] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<'teams' | 'organizations'>('teams');
   const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/book/username`;
 
   useEffect(() => {
@@ -128,43 +128,24 @@ export default function SettingsPage() {
 
       {/* Subscription */}
       <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold mb-4">Subscription</h2>
-        <div className="flex items-center gap-3 mb-4">
-          <button
-            onClick={() => setSelectedPlan('teams')}
-            className={`px-4 py-2 rounded-lg border text-sm font-medium ${
-              selectedPlan === 'teams'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Teams — $12/mo
-          </button>
-          <button
-            onClick={() => setSelectedPlan('organizations')}
-            className={`px-4 py-2 rounded-lg border text-sm font-medium ${
-              selectedPlan === 'organizations'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Organizations — $28/mo
-          </button>
-        </div>
+        <h2 className="font-semibold mb-4">{t('sub.title')}</h2>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium">Free Plan</p>
-            <p className="text-sm text-gray-500">1 user, unlimited event types</p>
+            <p className="text-sm text-gray-500">{t('sub.current')}</p>
+            <p className="font-medium">{t('sub.freeName')}</p>
+            <p className="text-sm text-gray-500">{t('sub.freeDesc')}</p>
+            <p className="text-sm text-gray-500 mt-2">{t('sub.upgradeDesc')}</p>
           </div>
           <div className="w-64">
+            <p className="text-sm font-medium mb-2">{t('sub.teamsName')}</p>
             {userId ? (
               <PayPalCheckout
-                planId={selectedPlan === 'teams' ? TEAMS_PLAN_ID : ORGS_PLAN_ID}
+                planId={TEAMS_PLAN_ID}
                 userId={userId}
                 onSuccess={() => window.location.reload()}
               />
             ) : (
-              <p className="text-sm text-gray-500">Loading…</p>
+              <p className="text-sm text-gray-500">{t('sub.loading')}</p>
             )}
           </div>
         </div>

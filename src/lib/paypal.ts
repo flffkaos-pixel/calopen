@@ -19,12 +19,6 @@ export const PLANS = {
     paypalPlanId: process.env.PAYPAL_TEAMS_PLAN_ID,
     features: ['Everything in Free', 'Team scheduling', 'Remove branding', 'Custom domain'],
   },
-  organizations: {
-    name: 'Organizations',
-    price: 28, // $28/user/month
-    paypalPlanId: process.env.PAYPAL_ORGS_PLAN_ID,
-    features: ['Everything in Teams', 'SAML SSO', 'Audit logs', 'SOC 2/HIPAA compliance'],
-  },
 } as const;
 
 export type Plan = keyof typeof PLANS;
