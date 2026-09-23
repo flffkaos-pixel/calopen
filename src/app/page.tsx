@@ -59,12 +59,6 @@ export default function LandingPage() {
             >
               {t('nav.start')}
             </Link>
-            <a
-              href="https://github.com/flffkaos-pixel/calopen"
-              className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50"
-            >
-              {t('nav.github')}
-            </a>
           </div>
         </div>
       </section>
