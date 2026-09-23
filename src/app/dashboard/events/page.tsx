@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Clock, Video, MapPin, Edit2, Trash2 } from 'lucide-react';
 
 interface EventType {
@@ -16,6 +16,23 @@ interface EventType {
 export default function EventsPage() {
   const [events, setEvents] = useState<EventType[]>([]);
   const [showNew, setShowNew] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = () => {
+    fetch('/api/event-types')
+      .then((r) => r.json())
+      .then((data) => setEvents(data.eventTypes || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(refresh, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this event type?')) return;
+    await fetch(`/api/event-types?id=${id}`, { method: 'DELETE' });
+    refresh();
+  };
 
   return (
     <div>
@@ -30,7 +47,11 @@ export default function EventsPage() {
         </button>
       </div>
 
-      {events.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border p-12 text-center text-gray-500">
+          Loading…
+        </div>
+      ) : events.length === 0 ? (
         <div className="bg-white rounded-xl border p-12 text-center">
           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No event types yet</h2>
@@ -63,7 +84,10 @@ export default function EventsPage() {
                 <button className="p-2 text-gray-600 hover:text-gray-900">
                   <Edit2 className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-red-600 hover:text-red-700">
+                <button
+                  onClick={() => handleDelete(event.id)}
+                  className="p-2 text-red-600 hover:text-red-700"
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -73,7 +97,12 @@ export default function EventsPage() {
       )}
 
       {/* New Event Modal */}
-      {showNew && <NewEventModal onClose={() => setShowNew(false)} />}
+      {showNew && (
+        <NewEventModal
+          onClose={() => setShowNew(false)}
+          onCreated={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -89,15 +118,32 @@ function Calendar(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function NewEventModal({ onClose }: { onClose: () => void }) {
+function NewEventModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(30);
   const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Create event type
-    onClose();
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/event-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, duration, description }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create');
+      onCreated();
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -148,6 +194,7 @@ function NewEventModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-3 justify-end">
             <button
               type="button"
@@ -158,9 +205,10 @@ function NewEventModal({ onClose }: { onClose: () => void }) {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              Create
+              {saving ? 'Creating…' : 'Create'}
             </button>
           </div>
         </form>

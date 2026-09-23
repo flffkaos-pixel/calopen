@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }),
+  username: varchar('username', { length: 100 }).unique(),
   avatarUrl: text('avatar_url'),
   timezone: varchar('timezone', { length: 50 }).default('UTC').notNull(),
   weekStart: integer('week_start').default(1).notNull(), // 0=Sunday, 1=Monday

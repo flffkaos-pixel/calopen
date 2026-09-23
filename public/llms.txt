@@ -1,0 +1,37 @@
+# CalOpen
+
+> Open source, HIPAA-ready appointment scheduling with online booking and PayPal payments. Free for 1 user. A Cal.com / Calendly alternative you can self-host.
+
+## What it does
+
+- Hosts create event types (e.g. "30 Minute Meeting", "60 Minute Consultation") with duration, price, and description.
+- Hosts set weekly availability (working hours per weekday) and date overrides (holidays, time off).
+- Each host gets a public booking page at `/book/[username]` where guests pick a date, choose a free time slot, and confirm with name + email.
+- Free events confirm instantly; paid events collect payment via PayPal.
+- Hosts manage everything in a dashboard: event types, availability, bookings, settings.
+- Paid SaaS plans (Teams $12/user/mo, Organizations $28/user/mo) are billed as PayPal subscriptions with server-side verification and webhooks.
+
+## Who it is for
+
+- Regulated businesses (clinics, law firms, therapists) that need audit logs and data control.
+- Teams that want scheduling without vendor lock-in (MIT licensed, self-hostable with Docker).
+
+## Key pages
+
+- Landing: `/`
+- Sign up: `/auth/signup`
+- Log in: `/auth/login`
+- Public booking: `/book/[username]`
+- Dashboard: `/dashboard` (requires login)
+
+## API (selected)
+
+- `GET /api/public/[username]` — host profile + active event types (public)
+- `GET /api/public/[username]/slots?eventId=&date=YYYY-MM-DD` — free slots (public)
+- `POST /api/public/[username]/book` — create booking as guest (public)
+- `GET /api/health` — status check
+
+## Tech
+
+- Next.js 15, Supabase (Postgres + Auth), Drizzle ORM, PayPal REST + Subscriptions API, Resend email.
+- Source: https://github.com/flffkaos-pixel/calopen

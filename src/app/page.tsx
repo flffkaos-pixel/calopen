@@ -1,7 +1,21 @@
+'use client';
+
 import Link from 'next/link';
 import { Calendar, Shield, Clock, Zap, Code, Globe } from 'lucide-react';
+import { useLang, LangToggle, type DictKey } from '@/lib/i18n';
 
 export default function LandingPage() {
+  const { t } = useLang();
+
+  const features: { icon: React.ReactNode; title: DictKey; desc: DictKey }[] = [
+    { icon: <Shield className="h-8 w-8" />, title: 'features.hipaa', desc: 'features.hipaa.d' },
+    { icon: <Code className="h-8 w-8" />, title: 'features.self', desc: 'features.self.d' },
+    { icon: <Globe className="h-8 w-8" />, title: 'features.caldav', desc: 'features.caldav.d' },
+    { icon: <Zap className="h-8 w-8" />, title: 'features.pay', desc: 'features.pay.d' },
+    { icon: <Clock className="h-8 w-8" />, title: 'features.tz', desc: 'features.tz.d' },
+    { icon: <Calendar className="h-8 w-8" />, title: 'features.embed', desc: 'features.embed.d' },
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -13,14 +27,15 @@ export default function LandingPage() {
               <span className="text-xl font-bold">CalOpen</span>
             </div>
             <div className="flex items-center gap-4">
+              <LangToggle />
               <Link href="/auth/login" className="text-gray-600 hover:text-gray-900">
-                Log in
+                {t('nav.login')}
               </Link>
               <Link
                 href="/auth/signup"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
-                Get Started Free
+                {t('nav.signup')}
               </Link>
             </div>
           </div>
@@ -31,24 +46,24 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Open Source Scheduling<br />
-            <span className="text-blue-600">for Regulated Businesses</span>
+            {t('hero.title1')}<br />
+            <span className="text-blue-600">{t('hero.title2')}</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            HIPAA-ready, self-hosted, CalDAV-native. The scheduling platform that respects your data.
+            {t('hero.sub')}
           </p>
           <div className="flex justify-center gap-4">
             <Link
               href="/auth/signup"
               className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700"
             >
-              Start Free
+              {t('nav.start')}
             </Link>
             <a
-              href="https://github.com/calopen/calopen"
+              href="https://github.com/flffkaos-pixel/calopen"
               className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50"
             >
-              View on GitHub
+              {t('nav.github')}
             </a>
           </div>
         </div>
@@ -57,38 +72,15 @@ export default function LandingPage() {
       {/* Features */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Why CalOpen?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">{t('features.title')}</h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={<Shield className="h-8 w-8" />}
-              title="HIPAA Ready"
-              description="Audit logs, encryption at rest, access controls. Built for healthcare from day one."
-            />
-            <FeatureCard
-              icon={<Code className="h-8 w-8" />}
-              title="Self-Hosted"
-              description="One Docker command. Your data stays on your servers. No vendor lock-in."
-            />
-            <FeatureCard
-              icon={<Globe className="h-8 w-8" />}
-              title="CalDAV Native"
-              description="Works with Nextcloud, Fastmail, iCloud. True calendar portability."
-            />
-            <FeatureCard
-              icon={<Zap className="h-8 w-8" />}
-              title="Stripe Payments"
-              description="Collect payments for appointments. Support for subscriptions and one-time payments."
-            />
-            <FeatureCard
-              icon={<Clock className="h-8 w-8" />}
-              title="Timezone Smart"
-              description="Automatic timezone detection. Perfect for remote teams and global clients."
-            />
-            <FeatureCard
-              icon={<Calendar className="h-8 w-8" />}
-              title="Embeddable"
-              description="Add booking to your site with a single script tag. Customizable widgets."
-            />
+            {features.map((f) => (
+              <div key={f.title} className="bg-white p-6 rounded-xl shadow-sm border">
+                <div className="text-blue-600 mb-4">{f.icon}</div>
+                <h3 className="text-xl font-semibold mb-2">{t(f.title)}</h3>
+                <p className="text-gray-600">{t(f.desc)}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -96,32 +88,33 @@ export default function LandingPage() {
       {/* Pricing */}
       <section className="py-20">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Simple Pricing</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">{t('pricing.title')}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <PricingCard
-              name="Free"
+              name={t('pricing.free')}
               price="$0"
-              period="forever"
-              features={['1 user', 'Unlimited event types', 'Google Calendar sync', 'Email notifications', 'Stripe payments']}
-              cta="Get Started"
+              period={t('pricing.forever')}
+              features={['1 user', 'Unlimited event types', 'Google Calendar sync', 'Email notifications', 'PayPal payments']}
+              cta={t('pricing.cta.start')}
               ctaLink="/auth/signup"
             />
             <PricingCard
-              name="Teams"
+              name={t('pricing.teams')}
               price="$12"
-              period="/user/month"
+              period={t('pricing.perUser')}
               features={['Everything in Free', 'Team scheduling', 'Remove branding', 'Custom domain', 'Priority support']}
-              cta="Start Trial"
+              cta={t('pricing.cta.trial')}
               ctaLink="/auth/signup?plan=teams"
               highlighted
             />
             <PricingCard
-              name="Organizations"
+              name={t('pricing.orgs')}
               price="$28"
-              period="/user/month"
+              period={t('pricing.perUser')}
               features={['Everything in Teams', 'SAML SSO', 'Audit logs', 'SOC 2/HIPAA', 'Dedicated database']}
-              cta="Contact Sales"
+              cta={t('pricing.cta.contact')}
               ctaLink="/contact"
+              highlighted={false}
             />
           </div>
         </div>
@@ -133,16 +126,6 @@ export default function LandingPage() {
           <p>© 2026 CalOpen. Open source under MIT License.</p>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border">
-      <div className="text-blue-600 mb-4">{icon}</div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-gray-600">{description}</p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -23,6 +23,31 @@ export default function AvailabilityPage() {
   });
 
   const [timezone, setTimezone] = useState('UTC');
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/availability')
+      .then((r) => r.json())
+      .then((data) => {
+        const rows: { dayOfWeek: number; startTime: string; endTime: string; isActive: boolean }[] =
+          data.schedule || [];
+        if (rows.length > 0) {
+          setSchedule((prev) => {
+            const next = { ...prev };
+            for (const row of rows) {
+              next[row.dayOfWeek] = {
+                enabled: row.isActive,
+                startTime: row.startTime,
+                endTime: row.endTime,
+              };
+            }
+            return next;
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const updateDay = (day: number, field: keyof DaySchedule, value: string | boolean) => {
     setSchedule((prev) => ({
@@ -31,22 +56,44 @@ export default function AvailabilityPage() {
     }));
   };
 
-  const handleSave = () => {
-    // TODO: Save availability
-    console.log('Saving:', schedule, timezone);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = Object.entries(schedule).map(([day, s]) => ({
+        dayOfWeek: Number(day),
+        startTime: s.startTime,
+        endTime: s.endTime,
+        enabled: s.enabled,
+      }));
+      const res = await fetch('/api/availability', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule: payload }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setSavedAt(new Date().toLocaleTimeString());
+    } catch {
+      setSavedAt(null);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Availability</h1>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          <Save className="h-4 w-4" />
-          Save
-        </button>
+        <div className="flex items-center gap-3">
+          {savedAt && <span className="text-sm text-green-600">Saved {savedAt}</span>}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
       </div>
 
       {/* Timezone */}

@@ -24,7 +24,9 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
     }
     
     await client.emails.send({
-      from: process.env.EMAIL_FROM || 'CalOpen <notifications@calopen.dev>',
+      // Free tier: onboarding@resend.dev works without domain verification.
+      // Set EMAIL_FROM after verifying your own domain in Resend.
+      from: process.env.EMAIL_FROM || 'CalOpen <onboarding@resend.dev>',
       to,
       subject,
       html,

@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar } from 'lucide-react';
+import { useLang, LangToggle } from '@/lib/i18n';
 
 export default function SignupPage() {
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -45,7 +47,11 @@ export default function SignupPage() {
           <span className="text-2xl font-bold">CalOpen</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-6">Create your account</h1>
+        <div className="flex justify-end mb-2">
+          <LangToggle />
+        </div>
+
+        <h1 className="text-2xl font-bold text-center mb-6">{t('auth.signup.title')}</h1>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
@@ -56,7 +62,7 @@ export default function SignupPage() {
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name
+              {t('auth.name')}
             </label>
             <input
               type="text"
@@ -69,7 +75,7 @@ export default function SignupPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -82,7 +88,7 @@ export default function SignupPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -99,14 +105,14 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? `${t('auth.create')}…` : t('auth.create')}
           </button>
         </form>
 
         <p className="text-center mt-6 text-gray-600">
-          Already have an account?{' '}
+          {t('auth.haveAccount')}{' '}
           <Link href="/auth/login" className="text-blue-600 hover:underline">
-            Sign in
+            {t('auth.signin')}
           </Link>
         </p>
       </div>

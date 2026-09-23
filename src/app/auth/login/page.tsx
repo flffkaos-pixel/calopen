@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar } from 'lucide-react';
+import { useLang, LangToggle } from '@/lib/i18n';
 
 export default function LoginPage() {
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,11 @@ export default function LoginPage() {
           <span className="text-2xl font-bold">CalOpen</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-6">Welcome back</h1>
+        <div className="flex justify-end mb-2">
+          <LangToggle />
+        </div>
+
+        <h1 className="text-2xl font-bold text-center mb-6">{t('auth.login.title')}</h1>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
@@ -52,7 +58,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -65,7 +71,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -81,14 +87,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? `${t('auth.signin')}…` : t('auth.signin')}
           </button>
         </form>
 
         <p className="text-center mt-6 text-gray-600">
-          Don't have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link href="/auth/signup" className="text-blue-600 hover:underline">
-            Sign up
+            {t('auth.create')}
           </Link>
         </p>
       </div>
