@@ -10,6 +10,7 @@ import {
   insertCalendarEvent,
   refreshAccessToken,
 } from '@/lib/google-calendar';
+import { rateLimit, RL } from '@/lib/rate-limit';
 
 function escapeHtml(str: string): string {
   return str
@@ -29,6 +30,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
+  const limited = rateLimit(request, 'public-book', RL.book);
+  if (limited) return limited;
+
   try {
     const { username } = await params;
     const user = await resolveUserByUsername(username);

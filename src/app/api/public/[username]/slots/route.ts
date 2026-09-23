@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveUserByUsername, computeSlots } from '@/lib/public-booking';
+import { rateLimit, RL } from '@/lib/rate-limit';
 
 /** GET /api/public/[username]/slots?eventId=&date=YYYY-MM-DD (no auth) */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
+  const limited = rateLimit(request, 'public-slots', RL.slots);
+  if (limited) return limited;
+
   const { username } = await params;
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get('eventId');

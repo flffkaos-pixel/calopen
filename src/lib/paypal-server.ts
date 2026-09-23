@@ -1,3 +1,5 @@
+import 'server-only';
+
 /**
  * PayPal server-side helpers (Live).
  * Uses PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET (server-only env vars).

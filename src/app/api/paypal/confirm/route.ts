@@ -4,11 +4,15 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getSubscription } from '@/lib/paypal-server';
+import { rateLimit, RL } from '@/lib/rate-limit';
 
 const TEAMS_PLAN_ID = process.env.PAYPAL_TEAMS_PLAN_ID;
 const ORGS_PLAN_ID = process.env.PAYPAL_ORGS_PLAN_ID;
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, 'paypal-confirm', RL.paypal);
+  if (limited) return limited;
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

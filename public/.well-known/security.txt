@@ -1,0 +1,4 @@
+Contact: https://github.com/flffkaos-pixel/calopen/security/advisories/new
+Expires: 2027-12-31T00:00:00.000Z
+Preferred-Languages: ko, en
+Policy: https://github.com/flffkaos-pixel/calopen/blob/main/SECURITY.md

@@ -1,3 +1,5 @@
+import 'server-only';
+
 /**
  * Google Calendar server helpers: OAuth token exchange/refresh,
  * freebusy lookup, and event insertion. All server-side only.

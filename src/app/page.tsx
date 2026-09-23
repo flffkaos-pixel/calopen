@@ -88,7 +88,7 @@ export default function LandingPage() {
               name={t('pricing.free')}
               price="$0"
               period={t('pricing.forever')}
-              features={['1 user', 'Unlimited event types', 'Google Calendar sync', 'Email notifications', 'PayPal payments']}
+              features={[t('pricing.f1'), t('pricing.f2'), t('pricing.f3'), t('pricing.f4'), t('pricing.f5')]}
               cta={t('pricing.cta.start')}
               ctaLink="/auth/signup"
             />
@@ -96,7 +96,7 @@ export default function LandingPage() {
               name={t('pricing.teams')}
               price="$12"
               period={t('pricing.perUser')}
-              features={['Everything in Free', 'Team scheduling', 'Remove branding', 'Custom domain', 'Priority support']}
+              features={[t('pricing.t1'), t('pricing.t2'), t('pricing.t3'), t('pricing.t4'), t('pricing.t5')]}
               cta={t('pricing.cta.trial')}
               ctaLink="/auth/signup?plan=teams"
               highlighted

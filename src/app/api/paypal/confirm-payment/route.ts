@@ -3,8 +3,12 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { bookings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { rateLimit, RL } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, 'paypal-confirm-payment', RL.paypal);
+  if (limited) return limited;
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

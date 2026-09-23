@@ -3,9 +3,13 @@ import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getGoogleAuthUrl } from '@/lib/google-calendar';
+import { rateLimit, RL } from '@/lib/rate-limit';
+import { NextRequest } from 'next/server';
 
 /** GET /api/calendar/google/connect — start OAuth flow (login required) */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, 'google-connect', RL.oauth);
+  if (limited) return limited;
   const supabase = await createServerSupabaseClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
