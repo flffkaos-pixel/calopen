@@ -1,7 +1,56 @@
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { db } from '@/lib/db';
-import { users, eventTypes, availability, dateOverrides, bookings } from '@/lib/db/schema';
+import { users, eventTypes, availability, dateOverrides, bookings, calendars } from '@/lib/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { getFreeBusy, getValidAccessToken, refreshAccessToken } from '@/lib/google-calendar';
+
+/** Best-effort Google busy periods for a host in [rangeStart, rangeEnd]. Never throws. */
+async function getGoogleBusy(
+  userId: string,
+  rangeStart: Date,
+  rangeEnd: Date
+): Promise<{ start: number; end: number }[]> {
+  try {
+    const [row] = await db
+      .select()
+      .from(calendars)
+      .where(and(eq(calendars.userId, userId), eq(calendars.provider, 'google')));
+    if (!row || !row.accessToken) return [];
+
+    const persist = async (accessToken: string, expiresAt: Date) => {
+      await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, row.id));
+    };
+
+    let token = await getValidAccessToken(
+      {
+        id: row.id,
+        accessToken: row.accessToken,
+        refreshToken: row.refreshToken,
+        expiresAt: row.expiresAt ? new Date(row.expiresAt) : null,
+      },
+      persist
+    );
+    if (!token) return [];
+
+    try {
+      return await getFreeBusy(token, rangeStart.toISOString(), rangeEnd.toISOString());
+    } catch (e) {
+      // Token may have been revoked server-side; try one refresh
+      if (e instanceof Error && e.message === 'GOOGLE_TOKEN_EXPIRED' && row.refreshToken) {
+        const refreshed = await refreshAccessToken(row.refreshToken).catch(() => null);
+        if (!refreshed) return [];
+        const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+        await persist(refreshed.access_token, expiresAt);
+        return await getFreeBusy(refreshed.access_token, rangeStart.toISOString(), rangeEnd.toISOString()).catch(
+          () => []
+        );
+      }
+      return [];
+    }
+  } catch {
+    return [];
+  }
+}
 
 export async function resolveUserByUsername(username: string) {
   const [user] = await db
@@ -91,12 +140,16 @@ export async function computeSlots(
         lte(bookings.startTime, rangeEnd)
       )
     );
-  const busy = existing
+  const busy: { start: number; end: number }[] = existing
     .filter((b) => b.status === 'confirmed' || b.status === 'pending')
     .map((b) => ({
       start: new Date(b.startTime).getTime(),
       end: new Date(b.endTime).getTime(),
     }));
+
+  // Merge Google Calendar busy times (best effort)
+  const googleBusy = await getGoogleBusy(userId, rangeStart, rangeEnd);
+  busy.push(...googleBusy);
 
   const now = Date.now();
   const step = event.duration + (event.bufferBefore || 0) + (event.bufferAfter || 0);

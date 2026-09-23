@@ -4,6 +4,12 @@ import { bookings, eventTypes, users } from '@/lib/db/schema';
 import { eq, and, lte, gte } from 'drizzle-orm';
 import { resolveUserByUsername, computeSlots, toHostDateStr } from '@/lib/public-booking';
 import { sendEmail, bookingConfirmationEmail } from '@/lib/email';
+import { calendars } from '@/lib/db/schema';
+import {
+  getValidAccessToken,
+  insertCalendarEvent,
+  refreshAccessToken,
+} from '@/lib/google-calendar';
 
 function escapeHtml(str: string): string {
   return str
@@ -115,7 +121,63 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ success: true, booking }, { status: 201 });
+    // Add to host's Google Calendar (best effort — never fails the booking)
+    let meetingLink: string | undefined;
+    try {
+      const [cal] = await db
+        .select()
+        .from(calendars)
+        .where(and(eq(calendars.userId, user.id), eq(calendars.provider, 'google')));
+      if (cal?.accessToken) {
+        const persist = async (accessToken: string, expiresAt: Date) => {
+          await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, cal.id));
+        };
+        let token = await getValidAccessToken(
+          {
+            id: cal.id,
+            accessToken: cal.accessToken,
+            refreshToken: cal.refreshToken,
+            expiresAt: cal.expiresAt ? new Date(cal.expiresAt) : null,
+          },
+          persist
+        );
+        const doInsert = async (t: string) =>
+          insertCalendarEvent(t, {
+            summary: `${event.title} — ${bookerName}`,
+            description: `Booked via CalOpen\nGuest: ${bookerName} <${bookerEmail}>\n${bookerNotes || ''}`,
+            startIso: start.toISOString(),
+            endIso: end.toISOString(),
+            attendeeEmail: bookerEmail,
+            timeZone: user.timezone || 'UTC',
+          });
+        try {
+          if (token) {
+            const created = await doInsert(token);
+            meetingLink = created.htmlLink;
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message === 'GOOGLE_TOKEN_EXPIRED' && cal.refreshToken) {
+            const refreshed = await refreshAccessToken(cal.refreshToken).catch(() => null);
+            if (refreshed) {
+              const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+              await persist(refreshed.access_token, expiresAt);
+              const created = await doInsert(refreshed.access_token).catch(() => null);
+              meetingLink = created?.htmlLink;
+            }
+          }
+        }
+        if (meetingLink) {
+          await db.update(bookings).set({ meetingLink }).where(eq(bookings.id, booking.id));
+        }
+      }
+    } catch (e) {
+      console.error('Google Calendar insert failed (non-fatal):', e);
+    }
+
+    return NextResponse.json(
+      { success: true, booking: { ...booking, meetingLink: meetingLink || booking.meetingLink } },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Public booking error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -19,6 +19,8 @@ export default function SettingsPage() {
   const [profileUsername, setProfileUsername] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [calMsg, setCalMsg] = useState<string | null>(null);
   const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/book/${profileUsername || 'username'}`;
 
   useEffect(() => {
@@ -39,6 +41,19 @@ export default function SettingsPage() {
       })
       .catch(() => {});
   }, []);
+
+  const handleGoogleConnect = () => {
+    window.location.href = '/api/calendar/google/connect';
+  };
+
+  const handleGoogleDisconnect = async () => {
+    if (!confirm(t('cal.confirmDisconnect'))) return;
+    const res = await fetch('/api/calendar/google', { method: 'DELETE' });
+    if (res.ok) {
+      setGoogleConnected(false);
+      setCalMsg(t('cal.disconnected'));
+    }
+  };
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -68,6 +83,19 @@ export default function SettingsPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  useEffect(() => {
+    fetch('/api/calendar/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.connected?.includes('google')) setGoogleConnected(true);
+      })
+      .catch(() => {});
+    const params = new URLSearchParams(window.location.search);
+    const cal = params.get('calendar');
+    if (cal === 'connected') setCalMsg(t('cal.connected'));
+    else if (cal === 'error') setCalMsg(t('cal.error'));
+  }, []);
 
   return (
     <div>
@@ -162,7 +190,8 @@ export default function SettingsPage() {
 
       {/* Calendar Integrations */}
       <div className="bg-white rounded-xl border p-6 mb-6">
-        <h2 className="font-semibold mb-4">Calendar Integrations</h2>
+        <h2 className="font-semibold mb-4">{t('cal.title')}</h2>
+        {calMsg && <p className="text-sm text-green-600 mb-3">{calMsg}</p>}
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-3">
@@ -171,27 +200,24 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="font-medium">Google Calendar</p>
-                <p className="text-sm text-gray-500">Sync your Google Calendar</p>
+                <p className="text-sm text-gray-500">{t('cal.googleDesc')}</p>
               </div>
             </div>
-            <button className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50">
-              Connect
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">
-                O
-              </div>
-              <div>
-                <p className="font-medium">Outlook Calendar</p>
-                <p className="text-sm text-gray-500">Sync your Outlook Calendar</p>
-              </div>
-            </div>
-            <button className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50">
-              Connect
-            </button>
+            {googleConnected ? (
+              <button
+                onClick={handleGoogleDisconnect}
+                className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
+              >
+                {t('cal.disconnect')}
+              </button>
+            ) : (
+              <button
+                onClick={handleGoogleConnect}
+                className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+              >
+                {t('cal.connect')}
+              </button>
+            )}
           </div>
         </div>
       </div>
