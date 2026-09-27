@@ -101,6 +101,16 @@ export async function POST(
       })
       .returning();
 
+    // Guest manage link (signed, no login needed)
+    let manageUrl: string | undefined;
+    try {
+      const { signBookingToken, bookingManageUrl } = await import('@/lib/booking-token');
+      const appBase = process.env.NEXT_PUBLIC_APP_URL || 'https://calopen.vercel.app';
+      manageUrl = bookingManageUrl(appBase, signBookingToken(booking.id, bookerEmail));
+    } catch (e) {
+      console.error('Manage link failed (non-fatal):', e);
+    }
+
     // Confirmation email to guest (skipped gracefully if Resend not configured)
     await sendEmail({
       to: bookerEmail,
@@ -111,6 +121,7 @@ export async function POST(
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         organizerName: escapeHtml(user.name || user.username || 'Your Host'),
+        manageUrl,
       }),
     });
 

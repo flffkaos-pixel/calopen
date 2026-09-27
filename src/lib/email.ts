@@ -45,6 +45,7 @@ export function bookingConfirmationEmail(data: {
   endTime: string;
   organizerName: string;
   meetingLink?: string;
+  manageUrl?: string;
 }) {
   return `
     <!DOCTYPE html>
@@ -74,6 +75,7 @@ export function bookingConfirmationEmail(data: {
             <p><strong>Time:</strong> ${data.startTime} - ${data.endTime}</p>
             ${data.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${data.meetingLink}">${data.meetingLink}</a></p>` : ''}
           </div>
+          ${data.manageUrl ? `<p><a class="button" href="${data.manageUrl}">Manage or cancel booking</a></p>` : ''}
           <p>If you need to reschedule or cancel, please contact us.</p>
         </div>
         <div class="footer">
