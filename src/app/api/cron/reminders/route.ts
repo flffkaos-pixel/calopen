@@ -12,11 +12,15 @@ import { signBookingToken, bookingManageUrl } from '@/lib/booking-token';
  */
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
+  const auth = request.headers.get('authorization') || '';
   if (cronSecret) {
-    const auth = request.headers.get('authorization') || '';
     if (auth !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+  } else if (process.env.VERCEL === '1') {
+    // Fail closed in production: Vercel auto-provisions CRON_SECRET for
+    // projects with cron jobs; running without it would allow mail spam.
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const now = new Date();
