@@ -3,6 +3,11 @@ import { db } from '@/lib/db';
 import { users, eventTypes, availability, dateOverrides, bookings, calendars } from '@/lib/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { getFreeBusy, getValidAccessToken, refreshAccessToken } from '@/lib/google-calendar';
+import {
+  getOutlookBusy,
+  getValidOutlookAccessToken,
+  refreshAccessToken as refreshOutlookToken,
+} from '@/lib/outlook-calendar';
 
 /** Best-effort Google busy periods for a host in [rangeStart, rangeEnd]. Never throws. */
 async function getGoogleBusy(
@@ -150,6 +155,46 @@ export async function computeSlots(
   // Merge Google Calendar busy times (best effort)
   const googleBusy = await getGoogleBusy(userId, rangeStart, rangeEnd);
   busy.push(...googleBusy);
+
+  // Merge Outlook busy times (best effort)
+  try {
+    const [orow] = await db
+      .select()
+      .from(calendars)
+      .where(and(eq(calendars.userId, userId), eq(calendars.provider, 'outlook')));
+    if (orow?.accessToken) {
+      const persistO = async (accessToken: string, expiresAt: Date) => {
+        await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, orow.id));
+      };
+      let otoken = await getValidOutlookAccessToken(
+        {
+          id: orow.id,
+          accessToken: orow.accessToken,
+          refreshToken: orow.refreshToken,
+          expiresAt: orow.expiresAt ? new Date(orow.expiresAt) : null,
+        },
+        persistO
+      );
+      if (!otoken && orow.refreshToken) {
+        const refreshed = await refreshOutlookToken(orow.refreshToken).catch(() => null);
+        if (refreshed) {
+          const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+          await persistO(refreshed.access_token, expiresAt);
+          otoken = refreshed.access_token;
+        }
+      }
+      if (otoken) {
+        const obusy = await getOutlookBusy(
+          otoken,
+          rangeStart.toISOString(),
+          rangeEnd.toISOString()
+        ).catch(() => []);
+        busy.push(...obusy);
+      }
+    }
+  } catch {
+    // Outlook failures never block slot computation
+  }
 
   const now = Date.now();
   const step = event.duration + (event.bufferBefore || 0) + (event.bufferAfter || 0);

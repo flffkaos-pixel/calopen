@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [outlookConnected, setOutlookConnected] = useState(false);
   const [calMsg, setCalMsg] = useState<string | null>(null);
   const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/book/${profileUsername || 'username'}`;
 
@@ -51,6 +52,19 @@ export default function SettingsPage() {
     const res = await fetch('/api/calendar/google', { method: 'DELETE' });
     if (res.ok) {
       setGoogleConnected(false);
+      setCalMsg(t('cal.disconnected'));
+    }
+  };
+
+  const handleOutlookConnect = () => {
+    window.location.href = '/api/calendar/outlook/connect';
+  };
+
+  const handleOutlookDisconnect = async () => {
+    if (!confirm(t('cal.confirmDisconnect'))) return;
+    const res = await fetch('/api/calendar/outlook', { method: 'DELETE' });
+    if (res.ok) {
+      setOutlookConnected(false);
       setCalMsg(t('cal.disconnected'));
     }
   };
@@ -89,6 +103,7 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.connected?.includes('google')) setGoogleConnected(true);
+        if (data?.connected?.includes('outlook')) setOutlookConnected(true);
       })
       .catch(() => {});
     const params = new URLSearchParams(window.location.search);
@@ -213,6 +228,32 @@ export default function SettingsPage() {
             ) : (
               <button
                 onClick={handleGoogleConnect}
+                className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+              >
+                {t('cal.connect')}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">
+                O
+              </div>
+              <div>
+                <p className="font-medium">Outlook Calendar</p>
+                <p className="text-sm text-gray-500">{t('cal.outlookDesc')}</p>
+              </div>
+            </div>
+            {outlookConnected ? (
+              <button
+                onClick={handleOutlookDisconnect}
+                className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
+              >
+                {t('cal.disconnect')}
+              </button>
+            ) : (
+              <button
+                onClick={handleOutlookConnect}
                 className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
               >
                 {t('cal.connect')}

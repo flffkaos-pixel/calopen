@@ -99,6 +99,7 @@ const dictionaries = {
     'cal.disconnected': 'Google Calendar disconnected.',
     'cal.error': 'Calendar connection failed. Please try again.',
     'cal.confirmDisconnect': 'Disconnect Google Calendar?',
+    'cal.outlookDesc': 'Block busy times and add bookings to your Outlook calendar',
   },
   ko: {
     'nav.login': '로그인',
@@ -194,6 +195,7 @@ const dictionaries = {
     'cal.disconnected': '구글 캘린더 연결 해제됐어요.',
     'cal.error': '캘린더 연결 실패. 다시 시도해주세요.',
     'cal.confirmDisconnect': '구글 캘린더 연결을 해제할까요?',
+    'cal.outlookDesc': '바쁜 시간 차단 + 예약을 Outlook 캘린더에 자동 등록',
   },
 } as const;
 

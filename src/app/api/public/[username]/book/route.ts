@@ -10,6 +10,11 @@ import {
   insertCalendarEvent,
   refreshAccessToken,
 } from '@/lib/google-calendar';
+import {
+  getValidOutlookAccessToken,
+  insertOutlookEvent,
+  refreshAccessToken as refreshOutlookAccessToken,
+} from '@/lib/outlook-calendar';
 import { rateLimit, RL } from '@/lib/rate-limit';
 
 function escapeHtml(str: string): string {
@@ -176,6 +181,51 @@ export async function POST(
       }
     } catch (e) {
       console.error('Google Calendar insert failed (non-fatal):', e);
+    }
+
+    // Add to host's Outlook calendar (best effort — never fails the booking)
+    try {
+      const [orow] = await db
+        .select()
+        .from(calendars)
+        .where(and(eq(calendars.userId, user.id), eq(calendars.provider, 'outlook')));
+      if (orow?.accessToken) {
+        const persistO = async (accessToken: string, expiresAt: Date) => {
+          await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, orow.id));
+        };
+        let otoken = await getValidOutlookAccessToken(
+          {
+            id: orow.id,
+            accessToken: orow.accessToken,
+            refreshToken: orow.refreshToken,
+            expiresAt: orow.expiresAt ? new Date(orow.expiresAt) : null,
+          },
+          persistO
+        );
+        if (!otoken && orow.refreshToken) {
+          const refreshed = await refreshOutlookAccessToken(orow.refreshToken).catch(() => null);
+          if (refreshed) {
+            const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+            await persistO(refreshed.access_token, expiresAt);
+            otoken = refreshed.access_token;
+          }
+        }
+        if (otoken) {
+          const created = await insertOutlookEvent(otoken, {
+            subject: `${event.title} — ${bookerName}`,
+            body: `Booked via CalOpen\nGuest: ${bookerName} <${bookerEmail}>\n${bookerNotes || ''}`,
+            startIso: start.toISOString(),
+            endIso: end.toISOString(),
+            attendeeEmail: bookerEmail,
+          }).catch(() => null);
+          if (created?.webLink && !meetingLink) {
+            meetingLink = created.webLink;
+            await db.update(bookings).set({ meetingLink }).where(eq(bookings.id, booking.id));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Outlook Calendar insert failed (non-fatal):', e);
     }
 
     return NextResponse.json(
