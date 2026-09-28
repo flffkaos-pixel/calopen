@@ -77,6 +77,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="naver-site-verification" content="8f81fd20ce651ab19de522026a6bdec69470e1c9" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_JSON_LD) }}
