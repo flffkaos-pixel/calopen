@@ -25,14 +25,21 @@ Prerequisites: Docker + a free [Supabase](https://supabase.com) project (Auth).
 git clone https://github.com/flffkaos-pixel/calopen.git
 cd calopen
 
-# 1. Configure (Supabase URL/keys + secrets — see comments inside)
-cp .env.example .env
-# edit .env with any text editor
+# Linux / macOS:
+./docker-setup.sh
+# Windows:
+#   docker-setup.bat
+```
 
-# 2. Run (migrations apply automatically on first start)
+The wizard asks for 3 values from your free Supabase project
+(Settings > API), generates the rest, and starts everything.
+Open http://localhost:3000 when done.
+
+Manual alternative:
+
+```bash
+cp .env.example .env   # fill in values (comments explain each)
 docker compose up -d --build
-
-# 3. Open http://localhost:3000
 ```
 
 What you get: Next.js app + local Postgres. Sign up, create an event type,
