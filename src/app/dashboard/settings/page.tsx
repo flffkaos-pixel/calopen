@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [outlookConnected, setOutlookConnected] = useState(false);
+  const [googleConfigured, setGoogleConfigured] = useState(true);
+  const [outlookConfigured, setOutlookConfigured] = useState(false);
   const [calMsg, setCalMsg] = useState<string | null>(null);
   const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/book/${profileUsername || 'username'}`;
 
@@ -104,6 +106,15 @@ export default function SettingsPage() {
       .then((data) => {
         if (data?.connected?.includes('google')) setGoogleConnected(true);
         if (data?.connected?.includes('outlook')) setOutlookConnected(true);
+      })
+      .catch(() => {});
+    fetch('/api/calendar/providers')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setGoogleConfigured(data.google !== false);
+          setOutlookConfigured(data.outlook === true);
+        }
       })
       .catch(() => {});
     const params = new URLSearchParams(window.location.search);
@@ -208,6 +219,7 @@ export default function SettingsPage() {
         <h2 className="font-semibold mb-4">{t('cal.title')}</h2>
         {calMsg && <p className="text-sm text-green-600 mb-3">{calMsg}</p>}
         <div className="space-y-3">
+          {googleConfigured && (
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">
@@ -234,6 +246,8 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
+          )}
+          {outlookConfigured && (
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">
@@ -260,6 +274,7 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
 
