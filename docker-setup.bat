@@ -58,15 +58,9 @@ echo --- App URL (Enter for local use) ---
 set /p APP_URL="Public URL [http://localhost:3000]: "
 if "!APP_URL!"=="" set APP_URL=http://localhost:3000
 
-REM 2. Auto-generate secrets (PowerShell RNG, no openssl needed)
-for /f %%i in ('powershell -NoProfile -Command "[Convert]::ToBase64String((1..36|ForEach-Object{Get-Random -Max 256}))"') do set DB_PASSWORD=%%i
-for /f %%i in ('powershell -NoProfile -Command "[Convert]::ToBase64String((1..48|ForEach-Object{Get-Random -Max 256}))"') do set TOKEN_SECRET=%%i
-set DB_PASSWORD=!DB_PASSWORD:/=_!
-set DB_PASSWORD=!DB_PASSWORD:+=-!
-set DB_PASSWORD=!DB_PASSWORD:==!
-set TOKEN_SECRET=!TOKEN_SECRET:/=_!
-set TOKEN_SECRET=!TOKEN_SECRET:+=-!
-set TOKEN_SECRET=!TOKEN_SECRET:==!
+REM 2. Auto-generate secrets as hex (no special chars, no openssl needed)
+for /f %%i in ('powershell -NoProfile -Command "$b = New-Object byte[] 24; (New-Object Random).NextBytes($b); ($b | ForEach-Object { $_.ToString('x2') }) -join ''"') do set DB_PASSWORD=%%i
+for /f %%i in ('powershell -NoProfile -Command "$b = New-Object byte[] 32; (New-Object Random).NextBytes($b); ($b | ForEach-Object { $_.ToString('x2') }) -join ''"') do set TOKEN_SECRET=%%i
 
 REM 3. Write .env
 (
@@ -87,7 +81,7 @@ echo --- Starting CalOpen ---
 echo Trying prebuilt image first (fast)...
 docker compose pull app >nul 2>nul
 if errorlevel 1 (
-    echo No prebuilt image yet, building locally (~3-5 min)...
+    echo No prebuilt image yet, building locally ^(about 3-5 min^)...
     docker compose up -d --build
 ) else (
     echo Prebuilt image pulled.
@@ -96,7 +90,7 @@ if errorlevel 1 (
 
 echo.
 echo ===============================================
-echo  Done! Open !APP_URL!
+echo  Done - open !APP_URL!
 echo  Sign up, create an event, share your /book link.
 echo  Logs: docker compose logs -f app
 echo  Stop:  docker compose down
