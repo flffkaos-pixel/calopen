@@ -6,6 +6,16 @@ notifications — in Korean and English.
 
 Live demo: https://calopen.vercel.app
 
+## Screenshots
+
+| Landing | Booking page |
+|---------|--------------|
+| ![Landing](docs/screenshots/landing.png) | ![Booking](docs/screenshots/booking.png) |
+
+| Dashboard | Comparison |
+|-----------|------------|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Compare](docs/screenshots/compare.png) |
+
 ## Why CalOpen?
 
 - **Self-hosted** — your data stays on your servers. One Docker command.
