@@ -1,0 +1,25 @@
+# Dependencies (reinstalled in builder)
+node_modules
+
+# Git history (keeps build context small)
+.git
+.gitignore
+
+# Local env with REAL secrets — NEVER bake into the image.
+# Configure via `docker compose` environment instead.
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+.next
+out
+dist
+coverage
+
+# Dev / OS noise
+*.log
+npm-debug.log*
+.DS_Store
+.vscode
+.idea

@@ -1,64 +1,88 @@
 # CalOpen
 
-The open source scheduling platform for regulated businesses.
+Open source appointment scheduling you can self-host. A Cal.com alternative
+with online booking, PayPal payments, Google Calendar sync, and email
+notifications — in Korean and English.
+
+Live demo: https://calopen.vercel.app
+
+## Why CalOpen?
+
+- **Self-hosted** — your data stays on your servers. One Docker command.
+- **Open source (MIT)** — no vendor lock-in, audit the code yourself.
+- **PayPal native** — subscriptions and one-time payments without Stripe.
+- **Google Calendar sync** — busy times block slots automatically; bookings
+  are added to the host's calendar.
+- **Guest self-service** — share a link, guests book and cancel on their own.
+- **Bilingual** — Korean / English toggle built in.
+- ** Free tier friendly** — runs on free Vercel + Supabase + Resend tiers.
+
+## Quick start (self-host, ~5 minutes)
+
+Prerequisites: Docker + a free [Supabase](https://supabase.com) project (Auth).
+
+```bash
+git clone https://github.com/flffkaos-pixel/calopen.git
+cd calopen
+
+# 1. Configure (Supabase URL/keys + secrets — see comments inside)
+cp .env.example .env
+# edit .env with any text editor
+
+# 2. Run (migrations apply automatically on first start)
+docker compose up -d --build
+
+# 3. Open http://localhost:3000
+```
+
+What you get: Next.js app + local Postgres. Sign up, create an event type,
+share your `/book/<username>` link.
+
+### Manual setup (no Docker)
+
+```bash
+npm install
+cp .env.example .env   # fill in values
+npm run dev            # dev server (migrations: node scripts/migrate.mjs)
+npm run build && npm start
+```
+
+## Environment variables
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL (Auth) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-side DB access (never expose) |
+| `DB_PASSWORD` | Yes (compose) | Local Postgres password |
+| `BOOKING_TOKEN_SECRET` | Yes | Signs guest cancel links (any random string) |
+| `NEXT_PUBLIC_APP_URL` | No | Public base URL (default `http://localhost:3000`) |
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | No | PayPal subscription buttons |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | No | Server-side subscription verification |
+| `PAYPAL_TEAMS_PLAN_ID` / `NEXT_PUBLIC_PAYPAL_TEAMS_PLAN_ID` | No | Teams $12/mo plan |
+| `RESEND_API_KEY` / `EMAIL_FROM` | No | Booking + reminder emails (free tier OK) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | No | Google Calendar sync |
 
 ## Features
 
-- **HIPAA Ready** - Audit logs, encryption, access controls
-- **Self-Hosted** - One Docker command deployment
-- **CalDAV Native** - Works with Nextcloud, Fastmail, iCloud
-- **Stripe Payments** - Collect payments for appointments
-- **Timezone Smart** - Automatic timezone detection
-- **Embeddable** - Add booking to your site with one script
+- Public booking pages (`/book/<username>`) with timezone-aware slots
+- Guest cancel links (signed, no login) + reminder emails (daily cron)
+- Dashboard: event types, availability, bookings, settings, subscriptions
+- PayPal subscriptions with server verification + webhooks
+- Google Calendar: busy-time blocking, auto event creation
+- Rate limiting, CSP/HSTS security headers, audit logs
+- SEO: sitemap, robots, JSON-LD, `llms.txt`
 
-## Quick Start
+## Tech stack
 
-### Using Docker (Recommended)
+- Next.js 15, React 19, Tailwind CSS
+- Supabase Auth + Postgres, Drizzle ORM
+- PayPal REST/Subscriptions, Resend, Google Calendar API
 
-```bash
-# Clone the repository
-git clone https://github.com/calopen/calopen.git
-cd calopen
+## Security
 
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env with your settings
-nano .env
-
-# Start the application
-docker compose up -d
-```
-
-### Manual Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Set up database
-cp .env.example .env
-# Edit .env with your database URL
-
-# Run migrations
-npm run db:push
-
-# Start development server
-npm run dev
-```
-
-## Environment Variables
-
-See `.env.example` for all required environment variables.
-
-## Tech Stack
-
-- **Frontend:** Next.js 15, React 19, Tailwind CSS
-- **Backend:** Node.js, Drizzle ORM
-- **Database:** PostgreSQL (Supabase)
-- **Auth:** Supabase Auth
-- **Payments:** Stripe
-- **Email:** Resend
+See [SECURITY.md](./SECURITY.md) to report vulnerabilities. Never commit
+`.env.local` (git-ignored; also excluded from Docker images via `.dockerignore`).
 
 ## License
 
