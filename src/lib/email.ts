@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 
 let resend: Resend | null = null;
-let gmailTransport: nodemailer.Transporter | null = null;
+let gmailTransport: Transporter | null = null;
 
 function getResendClient() {
   if (!resend && process.env.RESEND_API_KEY) {
