@@ -1,12 +1,29 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 let resend: Resend | null = null;
+let gmailTransport: nodemailer.Transporter | null = null;
 
 function getResendClient() {
   if (!resend && process.env.RESEND_API_KEY) {
     resend = new Resend(process.env.RESEND_API_KEY);
   }
   return resend;
+}
+
+function getGmailTransport() {
+  // Free, no-domain sending via Gmail SMTP + App Password.
+  // Set GMAIL_USER (full address) and GMAIL_APP_PASSWORD (16-char code).
+  if (!gmailTransport && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    gmailTransport = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+  }
+  return gmailTransport;
 }
 
 interface EmailOptions {
@@ -16,26 +33,43 @@ interface EmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: EmailOptions) {
+  // 1) Resend (primary)
   try {
     const client = getResendClient();
-    if (!client) {
-      console.warn('RESEND_API_KEY not configured, skipping email');
-      return { success: true, skipped: true };
+    if (client) {
+      await client.emails.send({
+        // Free tier: onboarding@resend.dev works without domain verification.
+        // Set EMAIL_FROM after verifying your own domain in Resend.
+        from: process.env.EMAIL_FROM || 'CalOpen <onboarding@resend.dev>',
+        to,
+        subject,
+        html,
+      });
+      return { success: true, via: 'resend' };
     }
-    
-    await client.emails.send({
-      // Free tier: onboarding@resend.dev works without domain verification.
-      // Set EMAIL_FROM after verifying your own domain in Resend.
-      from: process.env.EMAIL_FROM || 'CalOpen <onboarding@resend.dev>',
-      to,
-      subject,
-      html,
-    });
-    return { success: true };
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('Resend failed, trying Gmail fallback:', error);
+  }
+
+  // 2) Gmail SMTP fallback (free, no domain needed)
+  try {
+    const transport = getGmailTransport();
+    if (transport) {
+      await transport.sendMail({
+        from: `"CalOpen" <${process.env.GMAIL_USER}>`,
+        to,
+        subject,
+        html,
+      });
+      return { success: true, via: 'gmail' };
+    }
+  } catch (error) {
+    console.error('Gmail fallback failed:', error);
     return { success: false, error };
   }
+
+  console.warn('No email provider configured, skipping email');
+  return { success: true, skipped: true };
 }
 
 export function bookingConfirmationEmail(data: {
