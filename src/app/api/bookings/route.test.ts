@@ -1,17 +1,24 @@
-// Mock Next.js server
+// Mock Next.js server (typed to satisfy tsc; runtime behavior unchanged)
 jest.mock('next/server', () => ({
   NextResponse: class NextResponse {
-    constructor(body, options = {}) {
+    body: any
+    status: number
+    headers: any
+    constructor(body: any, options: any = {}) {
       this.body = body
       this.status = options.status || 200
       this.headers = new Map(Object.entries(options.headers || {}))
     }
-    static json(data, options = {}) {
+    static json(data: any, options: any = {}) {
       return new NextResponse(JSON.stringify(data), options)
     }
   },
   NextRequest: class NextRequest {
-    constructor(url, options = {}) {
+    url: string
+    method: string
+    _body: any
+    headers: any
+    constructor(url: string, options: any = {}) {
       this.url = url
       this.method = options.method || 'GET'
       this._body = options.body

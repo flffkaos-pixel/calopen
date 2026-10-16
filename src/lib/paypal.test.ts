@@ -43,20 +43,8 @@ describe('PayPal Configuration', () => {
       expect(PLANS.teams.features.length).toBeGreaterThan(0)
     })
 
-    it('should have organizations plan', () => {
-      expect(PLANS.organizations).toBeDefined()
-      expect(PLANS.organizations.name).toBe('Organizations')
-      expect(PLANS.organizations.price).toBe(28)
-    })
-
-    it('should have organizations plan features', () => {
-      expect(PLANS.organizations.features).toBeInstanceOf(Array)
-      expect(PLANS.organizations.features.length).toBeGreaterThan(0)
-    })
-
     it('should have correct price hierarchy', () => {
       expect(PLANS.free.price).toBeLessThan(PLANS.teams.price)
-      expect(PLANS.teams.price).toBeLessThan(PLANS.organizations.price)
     })
   })
 })

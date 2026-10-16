@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .from(availability)
       .where(eq(availability.userId, user.id));
 
-    let overrides: any[] = [];
+    let overrides: (typeof dateOverrides.$inferSelect)[] = [];
     if (date) {
       overrides = await db
         .select()
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
       await tx
         .insert(availability)
         .values(
-          schedule.map((item: any) => ({
+          schedule.map((item: { dayOfWeek: number; startTime: string; endTime: string; enabled?: boolean }) => ({
             userId: user.id,
             dayOfWeek: item.dayOfWeek,
             startTime: item.startTime,

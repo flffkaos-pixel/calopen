@@ -2,11 +2,10 @@ import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { db } from '@/lib/db';
 import { users, eventTypes, availability, dateOverrides, bookings, calendars } from '@/lib/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
-import { getFreeBusy, getValidAccessToken, refreshAccessToken } from '@/lib/google-calendar';
+import { getFreeBusy, getValidAccessToken } from '@/lib/google-calendar';
 import {
   getOutlookBusy,
   getValidOutlookAccessToken,
-  refreshAccessToken as refreshOutlookToken,
 } from '@/lib/outlook-calendar';
 
 /** Best-effort Google busy periods for a host in [rangeStart, rangeEnd]. Never throws. */
@@ -26,7 +25,9 @@ async function getGoogleBusy(
       await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, row.id));
     };
 
-    let token = await getValidAccessToken(
+    // getValidAccessToken refreshes when expired; a remaining 401 means
+    // revocation, in which case we skip Google data (best effort).
+    const token = await getValidAccessToken(
       {
         id: row.id,
         accessToken: row.accessToken,
@@ -39,17 +40,7 @@ async function getGoogleBusy(
 
     try {
       return await getFreeBusy(token, rangeStart.toISOString(), rangeEnd.toISOString());
-    } catch (e) {
-      // Token may have been revoked server-side; try one refresh
-      if (e instanceof Error && e.message === 'GOOGLE_TOKEN_EXPIRED' && row.refreshToken) {
-        const refreshed = await refreshAccessToken(row.refreshToken).catch(() => null);
-        if (!refreshed) return [];
-        const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
-        await persist(refreshed.access_token, expiresAt);
-        return await getFreeBusy(refreshed.access_token, rangeStart.toISOString(), rangeEnd.toISOString()).catch(
-          () => []
-        );
-      }
+    } catch {
       return [];
     }
   } catch {
@@ -166,7 +157,7 @@ export async function computeSlots(
       const persistO = async (accessToken: string, expiresAt: Date) => {
         await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, orow.id));
       };
-      let otoken = await getValidOutlookAccessToken(
+      const otoken = await getValidOutlookAccessToken(
         {
           id: orow.id,
           accessToken: orow.accessToken,
@@ -175,14 +166,6 @@ export async function computeSlots(
         },
         persistO
       );
-      if (!otoken && orow.refreshToken) {
-        const refreshed = await refreshOutlookToken(orow.refreshToken).catch(() => null);
-        if (refreshed) {
-          const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
-          await persistO(refreshed.access_token, expiresAt);
-          otoken = refreshed.access_token;
-        }
-      }
       if (otoken) {
         const obusy = await getOutlookBusy(
           otoken,

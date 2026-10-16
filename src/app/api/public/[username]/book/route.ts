@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { bookings, eventTypes, users } from '@/lib/db/schema';
-import { eq, and, lte, gte } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { resolveUserByUsername, computeSlots, toHostDateStr } from '@/lib/public-booking';
 import { sendEmail, bookingConfirmationEmail } from '@/lib/email';
 import { calendars } from '@/lib/db/schema';
 import {
   getValidAccessToken,
   insertCalendarEvent,
-  refreshAccessToken,
 } from '@/lib/google-calendar';
 import {
   getValidOutlookAccessToken,
   insertOutlookEvent,
-  refreshAccessToken as refreshOutlookAccessToken,
 } from '@/lib/outlook-calendar';
 import { rateLimit, RL } from '@/lib/rate-limit';
 
@@ -152,7 +150,7 @@ export async function POST(
         const persist = async (accessToken: string, expiresAt: Date) => {
           await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, cal.id));
         };
-        let token = await getValidAccessToken(
+        const token = await getValidAccessToken(
           {
             id: cal.id,
             accessToken: cal.accessToken,
@@ -161,30 +159,16 @@ export async function POST(
           },
           persist
         );
-        const doInsert = async (t: string) =>
-          insertCalendarEvent(t, {
+        if (token) {
+          const created = await insertCalendarEvent(token, {
             summary: `${event.title} — ${bookerName}`,
             description: `Booked via CalOpen\nGuest: ${bookerName} <${bookerEmail}>\n${bookerNotes || ''}`,
             startIso: start.toISOString(),
             endIso: end.toISOString(),
             attendeeEmail: bookerEmail,
             timeZone: user.timezone || 'UTC',
-          });
-        try {
-          if (token) {
-            const created = await doInsert(token);
-            meetingLink = created.htmlLink;
-          }
-        } catch (e) {
-          if (e instanceof Error && e.message === 'GOOGLE_TOKEN_EXPIRED' && cal.refreshToken) {
-            const refreshed = await refreshAccessToken(cal.refreshToken).catch(() => null);
-            if (refreshed) {
-              const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
-              await persist(refreshed.access_token, expiresAt);
-              const created = await doInsert(refreshed.access_token).catch(() => null);
-              meetingLink = created?.htmlLink;
-            }
-          }
+          }).catch(() => null);
+          meetingLink = created?.htmlLink;
         }
         if (meetingLink) {
           await db.update(bookings).set({ meetingLink }).where(eq(bookings.id, booking.id));
@@ -204,7 +188,7 @@ export async function POST(
         const persistO = async (accessToken: string, expiresAt: Date) => {
           await db.update(calendars).set({ accessToken, expiresAt }).where(eq(calendars.id, orow.id));
         };
-        let otoken = await getValidOutlookAccessToken(
+        const otoken = await getValidOutlookAccessToken(
           {
             id: orow.id,
             accessToken: orow.accessToken,
@@ -213,14 +197,6 @@ export async function POST(
           },
           persistO
         );
-        if (!otoken && orow.refreshToken) {
-          const refreshed = await refreshOutlookAccessToken(orow.refreshToken).catch(() => null);
-          if (refreshed) {
-            const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
-            await persistO(refreshed.access_token, expiresAt);
-            otoken = refreshed.access_token;
-          }
-        }
         if (otoken) {
           const created = await insertOutlookEvent(otoken, {
             subject: `${event.title} — ${bookerName}`,

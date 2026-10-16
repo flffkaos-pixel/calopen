@@ -33,10 +33,14 @@ interface EmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: EmailOptions) {
+  let attempted = false;
+  let lastError: unknown = null;
+
   // 1) Resend (primary)
   try {
     const client = getResendClient();
     if (client) {
+      attempted = true;
       await client.emails.send({
         // Free tier: onboarding@resend.dev works without domain verification.
         // Set EMAIL_FROM after verifying your own domain in Resend.
@@ -49,12 +53,14 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
     }
   } catch (error) {
     console.error('Resend failed, trying Gmail fallback:', error);
+    lastError = error;
   }
 
   // 2) Gmail SMTP fallback (free, no domain needed)
   try {
     const transport = getGmailTransport();
     if (transport) {
+      attempted = true;
       await transport.sendMail({
         from: `"CalOpen" <${process.env.GMAIL_USER}>`,
         to,
@@ -65,9 +71,14 @@ export async function sendEmail({ to, subject, html }: EmailOptions) {
     }
   } catch (error) {
     console.error('Gmail fallback failed:', error);
-    return { success: false, error };
+    lastError = error;
   }
 
+  // Attempted but everything failed -> real error (callers must not
+  // mistake this for success). Nothing configured at all -> skip.
+  if (attempted) {
+    return { success: false, error: lastError };
+  }
   console.warn('No email provider configured, skipping email');
   return { success: true, skipped: true };
 }
